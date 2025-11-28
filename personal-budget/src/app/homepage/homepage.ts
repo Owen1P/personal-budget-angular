@@ -1,61 +1,46 @@
-import { Component, inject, PLATFORM_ID, AfterViewInit } from '@angular/core';
-import {isPlatformBrowser} from '@angular/common'
+import { Component, OnInit } from '@angular/core';
 import { Article } from '../article/article';
-import { HttpClient } from '@angular/common/http';
-import { Chart, registerables } from 'chart.js'
+import { DonutChartComponent } from '../donut-chart/donut-chart';
+import { Breadcrumbs } from '../breadcrumbs/breadcrumbs';
 
+import { DataService, BudgetItem } from '../data';
 
+import { Chart, registerables } from 'chart.js';
 Chart.register(...registerables);
 
 @Component({
   selector: 'pb-homepage',
-  imports: [Article],
+  standalone: true,
+  imports: [Article, DonutChartComponent, Breadcrumbs],
   templateUrl: './homepage.html',
-  styleUrl: './homepage.scss',
+  styleUrls: ['./homepage.scss'],
 })
-export class Homepage implements AfterViewInit {
-
-
-  private platformId = inject(PLATFORM_ID);
-
+export class Homepage implements OnInit {
 
   public dataSource = {
-                datasets: [
-                    {
-                        data: [] as number[],
-                        backgroundColor: [
-                            '#ffcd56',
-                            '#ff6384',
-                            '#36a2eb',
-                            '#fd6b19',
-                        ]
-                    }
-                ],
-                labels: [] as string[],
-            };
+    datasets: [
+      {
+        data: [] as number[],
+        backgroundColor: ['#ffcd56', '#ff6384', '#36a2eb', '#fd6b19'],
+      },
+    ],
+    labels: [] as string[],
+  };
 
+  // 👇 NOTE: we inject DataService, NOT HttpClient
+  constructor(private dataService: DataService) {}
 
-      constructor(private http: HttpClient) {}
+  ngOnInit(): void {
+    this.dataService.getBudgetData().subscribe((items: BudgetItem[]) => {
+      for (let i = 0; i < items.length; i++) {
+        this.dataSource.datasets[0].data[i] = items[i].budget;
+        this.dataSource.labels[i] = items[i].title;
+      }
+      this.createChart();
+    });
+  }
 
-
-  ngAfterViewInit(): void {
-    this.http
-      .get<{ myBudget: { title: string; budget: number }[] }>(
-        'http://localhost:3000/budget'
-      )
-    .subscribe((res: any) => {
-      for (var i = 0; i < res.myBudget.length; i++) {
-        this.dataSource.datasets[0].data[i] = res.myBudget[i].budget;
-        this.dataSource.labels[i] = res.myBudget[i].title;
-
-    }
-    if (isPlatformBrowser(this.platformId)) {
-          this.createChart();
-        }
-
-  });
-}
-    private createChart() {
+  private createChart(): void {
     const canvas = document.getElementById('myChart') as HTMLCanvasElement | null;
     if (!canvas) return;
 
@@ -67,8 +52,4 @@ export class Homepage implements AfterViewInit {
       data: this.dataSource,
     });
   }
-
-
-
-
 }
