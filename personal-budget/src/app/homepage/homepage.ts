@@ -27,7 +27,6 @@ export class Homepage implements OnInit {
     labels: [] as string[],
   };
 
-  // 👇 NOTE: we inject DataService, NOT HttpClient
   constructor(private dataService: DataService) {}
 
   ngOnInit(): void {
